@@ -1,0 +1,31 @@
+import {onetContentModelElement} from './reference/contentModelElement'
+import {onetJobZone} from './reference/jobZone'
+import {onetRatingCategory} from './reference/ratingCategory'
+import {onetScale} from './reference/scale'
+import {onetLevelScaleAnchor} from './documents/levelScaleAnchor'
+import {onetOccupation} from './documents/occupation'
+import {onetJobTitleItem} from './objects/jobTitleItem'
+import {onetRatingItem} from './objects/ratingItem'
+import {onetRelatedOccupationItem} from './objects/relatedOccupationItem'
+import {onetSoftwareSkillItem} from './objects/softwareSkillItem'
+import {onetTaskItem} from './objects/taskItem'
+import {onetWorkStyleItem} from './objects/workStyleItem'
+
+/** O*NET 31.0 content types — aligned with https://www.onetcenter.org/dictionary/31.0/mysql/ */
+export const onetSchemaTypes = [
+  // Reference / lookup tables
+  onetContentModelElement,
+  onetScale,
+  onetJobZone,
+  onetRatingCategory,
+  onetLevelScaleAnchor,
+  // Occupation hub
+  onetOccupation,
+  // Occupation-specific rows embedded in onetOccupation
+  onetTaskItem,
+  onetJobTitleItem,
+  onetSoftwareSkillItem,
+  onetWorkStyleItem,
+  onetRatingItem,
+  onetRelatedOccupationItem,
+]

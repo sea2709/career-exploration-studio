@@ -9,23 +9,39 @@
     "deploy": "sanity deploy",
     "deploy-graphql": "sanity graphql deploy",
     "dev": "sanity dev",
-    "start": "sanity start"
+    "start": "sanity start",
+    "download:onet": "tsx scripts/import-onet/download.ts",
+    "import:onet": "tsx scripts/import-onet/index.ts",
+    "import:onet:dry": "tsx scripts/import-onet/index.ts --dry-run",
+    "cleanup:onet": "tsx scripts/import-onet/cleanup.ts",
+    "typegen": "sanity schemas extract --force && sanity typegen generate",
+    "test:functions": "sanity functions test classify-conversations --with-user-token",
+    "deploy:blueprints": "sanity blueprints deploy"
   },
   "keywords": [
     "sanity"
   ],
   "dependencies": {
-    "@sanity/vision": "^6.15.0",
+    "@ai-sdk/google": "^4.0.85",
+    "@sanity/client": "^8.6.2",
+    "@sanity/context": "^2.1.0",
+    "@sanity/functions": "^1.8.0",
+    "@sanity/vision": "^6.17.0",
+    "ai": "^7.0.122",
+    "dotenv": "^18.0.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "sanity": "^6.15.0",
+    "sanity": "^6.16.0",
     "styled-components": "^6.1.18"
   },
   "devDependencies": {
+    "@sanity/blueprints": "^0.27.0",
     "@sanity/eslint-config-studio": "^7",
+    "@types/node": "^26.6.2",
     "@types/react": "^19.2.14",
     "eslint": "^10.8.1",
     "prettier": "^3.5",
+    "tsx": "^4.23.13",
     "typescript": "^5.8"
   },
   "prettier": {
