@@ -14,20 +14,15 @@
     "import:onet": "tsx scripts/import-onet/index.ts",
     "import:onet:dry": "tsx scripts/import-onet/index.ts --dry-run",
     "cleanup:onet": "tsx scripts/import-onet/cleanup.ts",
-    "typegen": "sanity schemas extract --force && sanity typegen generate",
-    "test:functions": "sanity functions test classify-conversations --with-user-token",
-    "deploy:blueprints": "sanity blueprints deploy"
+    "typegen": "sanity schemas extract --force && sanity typegen generate"
   },
   "keywords": [
     "sanity"
   ],
   "dependencies": {
-    "@ai-sdk/google": "^4.0.85",
     "@sanity/client": "^8.6.2",
     "@sanity/context": "^2.1.0",
-    "@sanity/functions": "^1.8.0",
     "@sanity/vision": "^6.17.0",
-    "ai": "^7.0.122",
     "dotenv": "^18.0.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -35,7 +30,6 @@
     "styled-components": "^6.1.18"
   },
   "devDependencies": {
-    "@sanity/blueprints": "^0.27.0",
     "@sanity/eslint-config-studio": "^7",
     "@types/node": "^26.6.2",
     "@types/react": "^19.2.14",
