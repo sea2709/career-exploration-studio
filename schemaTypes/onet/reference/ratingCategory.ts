@@ -3,8 +3,9 @@ import {ListIcon} from '@sanity/icons/List'
 import {importKeyField} from '../shared/fields'
 
 /**
- * Maps to MySQL tables: education_categories, work_context_categories
- * (same column shape; distinguished by categoryDomain).
+ * Maps to MySQL tables: education_categories, training_experience_categories,
+ * work_context_categories and task_categories (distinguished by categoryDomain).
+ * Task categories have no content model element.
  */
 export const onetRatingCategory = defineType({
   name: 'onetRatingCategory',
@@ -20,7 +21,9 @@ export const onetRatingCategory = defineType({
       options: {
         list: [
           {title: 'Education', value: 'education'},
+          {title: 'Training and Experience', value: 'trainingExperience'},
           {title: 'Work Context', value: 'workContext'},
+          {title: 'Task', value: 'task'},
         ],
         layout: 'radio',
       },
@@ -31,7 +34,10 @@ export const onetRatingCategory = defineType({
       title: 'Content Model Element',
       type: 'reference',
       to: [{type: 'onetContentModelElement'}],
-      validation: (rule) => rule.required(),
+      validation: (rule) =>
+        rule.custom((value, {document}) =>
+          value || document?.categoryDomain === 'task' ? true : 'Required',
+        ),
     }),
     defineField({
       name: 'scale',
@@ -59,11 +65,12 @@ export const onetRatingCategory = defineType({
       domain: 'categoryDomain',
       category: 'category',
       elementName: 'element.elementName',
+      scaleName: 'scale.scaleName',
       description: 'categoryDescription',
     },
-    prepare({domain, category, elementName, description}) {
+    prepare({domain, category, elementName, scaleName, description}) {
       return {
-        title: `${elementName ?? 'Element'} · category ${category ?? '?'}`,
+        title: `${elementName ?? scaleName ?? 'Element'} · category ${category ?? '?'}`,
         subtitle: [domain, description].filter(Boolean).join(' — '),
       }
     },

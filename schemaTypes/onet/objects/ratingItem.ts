@@ -5,7 +5,7 @@ import {domainMetadataFields, ratingStatisticsFields} from '../shared/fields'
 /**
  * Occupation × element × scale ratings shared by multiple O*NET MySQL tables:
  * essential_skills, transferable_skills, knowledge, abilities, work_activities,
- * education and work_context.
+ * education, training_experience and work_context.
  */
 export const ONET_RATING_DOMAINS = [
   {title: 'Essential Skills', value: 'essentialSkills'},
@@ -14,6 +14,7 @@ export const ONET_RATING_DOMAINS = [
   {title: 'Abilities', value: 'abilities'},
   {title: 'Work Activities', value: 'workActivities'},
   {title: 'Education', value: 'education'},
+  {title: 'Training and Experience', value: 'trainingExperience'},
   {title: 'Work Context', value: 'workContext'},
 ] as const
 
@@ -53,7 +54,8 @@ export const onetRatingItem = defineType({
       title: 'Rating Category',
       type: 'reference',
       to: [{type: 'onetRatingCategory'}],
-      description: 'Percent frequency category (education and work context only)',
+      description:
+        'Percent frequency category (education, training and experience, and work context only)',
     }),
     defineField({
       name: 'dataValue',

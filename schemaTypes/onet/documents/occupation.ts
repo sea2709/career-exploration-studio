@@ -19,6 +19,7 @@ export const onetOccupation = defineType({
     {name: 'ratings', title: 'Ratings'},
     {name: 'related', title: 'Related'},
     {name: 'interests', title: 'Interests'},
+    {name: 'metadata', title: 'Survey Metadata'},
   ],
   fields: [
     importKeyField,
@@ -67,6 +68,15 @@ export const onetOccupation = defineType({
       of: [defineArrayMember({type: 'onetTaskItem'})],
     }),
     defineField({
+      name: 'emergingTasks',
+      title: 'Emerging Tasks',
+      type: 'array',
+      description: 'From emerging_tasks',
+      group: 'tasks',
+      readOnly: true,
+      of: [defineArrayMember({type: 'onetEmergingTaskItem'})],
+    }),
+    defineField({
       name: 'jobTitles',
       title: 'Job Titles',
       type: 'array',
@@ -74,6 +84,15 @@ export const onetOccupation = defineType({
       group: 'titles',
       readOnly: true,
       of: [defineArrayMember({type: 'onetJobTitleItem'})],
+    }),
+    defineField({
+      name: 'reportedTitles',
+      title: 'Sample of Reported Titles',
+      type: 'array',
+      description: 'From sample_of_reported_titles',
+      group: 'titles',
+      readOnly: true,
+      of: [defineArrayMember({type: 'onetReportedTitleItem'})],
     }),
     defineField({
       name: 'softwareSkills',
@@ -98,7 +117,7 @@ export const onetOccupation = defineType({
       title: 'Ratings',
       type: 'array',
       description:
-        'From essential_skills, transferable_skills, knowledge, abilities, work_activities, education and work_context',
+        'From essential_skills, transferable_skills, knowledge, abilities, work_activities, education, training_experience and work_context',
       group: 'ratings',
       readOnly: true,
       of: [defineArrayMember({type: 'onetRatingItem'})],
@@ -143,6 +162,15 @@ export const onetOccupation = defineType({
           of: [defineArrayMember({type: 'onetInterestAreaScore'})],
         }),
       ],
+    }),
+    defineField({
+      name: 'surveyMetadata',
+      title: 'Survey Metadata',
+      type: 'array',
+      description: 'From occupation_level_metadata',
+      group: 'metadata',
+      readOnly: true,
+      of: [defineArrayMember({type: 'onetOccupationMetadataItem'})],
     }),
   ],
   preview: {

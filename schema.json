@@ -223,6 +223,57 @@
     }
   },
   {
+    "name": "onetOccupationMetadataItem",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "onetOccupationMetadataItem"
+          }
+        },
+        "item": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "response": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "n": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "percent": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "dateUpdated": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  {
     "type": "type",
     "name": "onetInterest.reference",
     "value": {
@@ -513,6 +564,10 @@
               },
               {
                 "type": "string",
+                "value": "trainingExperience"
+              },
+              {
+                "type": "string",
                 "value": "workContext"
               }
             ]
@@ -748,6 +803,46 @@
     }
   },
   {
+    "name": "onetReportedTitleItem",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "onetReportedTitleItem"
+          }
+        },
+        "reportedJobTitle": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "shownInMyNextMove": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "Y"
+              },
+              {
+                "type": "string",
+                "value": "N"
+              }
+            ]
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  {
     "name": "onetJobTitleItem",
     "type": "type",
     "value": {
@@ -775,6 +870,227 @@
           "optional": true
         },
         "sources": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  {
+    "name": "onetEmergingTaskItem",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "onetEmergingTaskItem"
+          }
+        },
+        "task": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "category": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "New"
+              },
+              {
+                "type": "string",
+                "value": "Revision"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "originalTaskId": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "originalTask": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "dateUpdated": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "domainSource": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  {
+    "name": "onetTaskDwaItem",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "onetTaskDwaItem"
+          }
+        },
+        "dwa": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "inline",
+            "name": "onetContentModelElement.reference"
+          },
+          "optional": true
+        },
+        "dateUpdated": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "domainSource": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        }
+      }
+    }
+  },
+  {
+    "name": "onetTaskRatingItem",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "onetTaskRatingItem"
+          }
+        },
+        "scale": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "inline",
+            "name": "onetScale.reference"
+          },
+          "optional": true
+        },
+        "ratingCategory": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "inline",
+            "name": "onetRatingCategory.reference"
+          },
+          "optional": true
+        },
+        "dataValue": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "n": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "standardError": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "lowerCiBound": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "upperCiBound": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "number"
+          },
+          "optional": true
+        },
+        "recommendSuppress": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "Y"
+              },
+              {
+                "type": "string",
+                "value": "N"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "notRelevant": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "union",
+            "of": [
+              {
+                "type": "string",
+                "value": "Y"
+              },
+              {
+                "type": "string",
+                "value": "N"
+              }
+            ]
+          },
+          "optional": true
+        },
+        "dateUpdated": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "domainSource": {
           "type": "objectAttribute",
           "value": {
             "type": "string"
@@ -846,6 +1162,50 @@
           "type": "objectAttribute",
           "value": {
             "type": "string"
+          },
+          "optional": true
+        },
+        "ratings": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "array",
+            "of": {
+              "type": "object",
+              "attributes": {
+                "_key": {
+                  "type": "objectAttribute",
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              },
+              "rest": {
+                "type": "inline",
+                "name": "onetTaskRatingItem"
+              }
+            }
+          },
+          "optional": true
+        },
+        "dwas": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "array",
+            "of": {
+              "type": "object",
+              "attributes": {
+                "_key": {
+                  "type": "objectAttribute",
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              },
+              "rest": {
+                "type": "inline",
+                "name": "onetTaskDwaItem"
+              }
+            }
           },
           "optional": true
         }
@@ -975,6 +1335,28 @@
         },
         "optional": true
       },
+      "emergingTasks": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "onetEmergingTaskItem"
+            }
+          }
+        },
+        "optional": true
+      },
       "jobTitles": {
         "type": "objectAttribute",
         "value": {
@@ -992,6 +1374,28 @@
             "rest": {
               "type": "inline",
               "name": "onetJobTitleItem"
+            }
+          }
+        },
+        "optional": true
+      },
+      "reportedTitles": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "onetReportedTitleItem"
             }
           }
         },
@@ -1176,6 +1580,59 @@
           }
         },
         "optional": true
+      },
+      "surveyMetadata": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "onetOccupationMetadataItem"
+            }
+          }
+        },
+        "optional": true
+      }
+    }
+  },
+  {
+    "name": "onetSurveyItem",
+    "type": "type",
+    "value": {
+      "type": "object",
+      "attributes": {
+        "_type": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string",
+            "value": "onetSurveyItem"
+          }
+        },
+        "surveyItemNumber": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "string"
+          },
+          "optional": true
+        },
+        "scale": {
+          "type": "objectAttribute",
+          "value": {
+            "type": "inline",
+            "name": "onetScale.reference"
+          },
+          "optional": true
+        }
       }
     }
   },
@@ -1511,7 +1968,15 @@
             },
             {
               "type": "string",
+              "value": "trainingExperience"
+            },
+            {
+              "type": "string",
               "value": "workContext"
+            },
+            {
+              "type": "string",
+              "value": "task"
             }
           ]
         },
@@ -1774,6 +2239,80 @@
         "type": "objectAttribute",
         "value": {
           "type": "string"
+        },
+        "optional": true
+      },
+      "parentElement": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "inline",
+          "name": "onetContentModelElement.reference"
+        },
+        "optional": true
+      },
+      "relatedWorkActivities": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "onetContentModelElement.reference"
+            }
+          }
+        },
+        "optional": true
+      },
+      "relatedWorkContext": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "onetContentModelElement.reference"
+            }
+          }
+        },
+        "optional": true
+      },
+      "surveyItems": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "array",
+          "of": {
+            "type": "object",
+            "attributes": {
+              "_key": {
+                "type": "objectAttribute",
+                "value": {
+                  "type": "string"
+                }
+              }
+            },
+            "rest": {
+              "type": "inline",
+              "name": "onetSurveyItem"
+            }
+          }
         },
         "optional": true
       }

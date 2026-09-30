@@ -9,19 +9,13 @@
  *   npm run import:onet -- --phases interests
  *   npm run import:onet -- --occupations 15-1252.00,11-1011.00
  *   npm run import:onet -- --rating-domains essentialSkills,knowledge
- *   npm run import:onet -- --all-ratings   # includes workContext (~305k rows)
  *
  * Only reference tables and occupations become documents; per-occupation rows are
- * embedded as arrays on onetOccupation (phase "details").
+ * embedded as arrays on onetOccupation (phase "details"), and element-level rows
+ * (work activity hierarchy, crosswalks, survey items) on onetContentModelElement.
  */
 import {getWriteClient} from './client'
-import {
-  DEFAULT_PHASES,
-  DEFAULT_RATING_DOMAINS,
-  RATING_DOMAIN_FILES,
-  runImport,
-  type ImportPhase,
-} from './import'
+import {DEFAULT_PHASES, DEFAULT_RATING_DOMAINS, runImport, type ImportPhase} from './import'
 
 function parseArgs(argv: string[]) {
   const flags = new Map<string, string | boolean>()
@@ -52,7 +46,7 @@ Options:
   --phases <list>           Comma-separated: ${DEFAULT_PHASES.join(', ')}
   --occupations <codes>     Comma-separated O*NET-SOC codes to include
   --rating-domains <list>   Default: ${DEFAULT_RATING_DOMAINS.join(', ')}
-  --all-ratings             Include workContext (~305k rows, roughly doubles occupation size)
+                            A subset removes the other domains from occupations
   --help                    Show this help
 `)
     return
@@ -68,16 +62,12 @@ Options:
         .filter(Boolean) as ImportPhase[]
     : DEFAULT_PHASES
 
-  let ratingDomains = flags.has('rating-domains')
+  const ratingDomains = flags.has('rating-domains')
     ? String(flags.get('rating-domains'))
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
     : [...DEFAULT_RATING_DOMAINS]
-
-  if (flags.get('all-ratings')) {
-    ratingDomains = Object.keys(RATING_DOMAIN_FILES)
-  }
 
   const occupationFilter = flags.has('occupations')
     ? new Set(

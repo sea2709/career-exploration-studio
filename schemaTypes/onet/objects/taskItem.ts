@@ -1,4 +1,4 @@
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {domainMetadataFields} from '../shared/fields'
 
@@ -41,6 +41,20 @@ export const onetTaskItem = defineType({
       validation: (rule) => rule.integer().min(0),
     }),
     ...domainMetadataFields,
+    defineField({
+      name: 'ratings',
+      title: 'Ratings',
+      type: 'array',
+      description: 'From task_ratings: importance, relevance and frequency distribution',
+      of: [defineArrayMember({type: 'onetTaskRatingItem'})],
+    }),
+    defineField({
+      name: 'dwas',
+      title: 'Detailed Work Activities',
+      type: 'array',
+      description: 'From tasks_to_dwas',
+      of: [defineArrayMember({type: 'onetTaskDwaItem'})],
+    }),
   ],
   preview: {
     select: {title: 'task', subtitle: 'taskType'},

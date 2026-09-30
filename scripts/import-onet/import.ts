@@ -28,18 +28,39 @@ export const RATING_DOMAIN_FILES: Record<
   abilities: {file: 'Abilities.txt', domain: 'abilities'},
   workActivities: {file: 'Work Activities.txt', domain: 'workActivities'},
   education: {file: 'Education.txt', domain: 'education', hasCategory: true},
+  trainingExperience: {
+    file: 'Training and Experience.txt',
+    domain: 'trainingExperience',
+    hasCategory: true,
+  },
   workContext: {file: 'Work Context.txt', domain: 'workContext', hasCategory: true},
 }
 
-/** workContext is excluded by default: it roughly doubles the size of every occupation. */
-export const DEFAULT_RATING_DOMAINS = [
-  'essentialSkills',
-  'transferableSkills',
-  'knowledge',
-  'abilities',
-  'workActivities',
-  'education',
-]
+/**
+ * The details phase replaces each occupation's whole ratings array, so importing a subset
+ * with --rating-domains drops the other domains from Sanity.
+ */
+export const DEFAULT_RATING_DOMAINS = Object.keys(RATING_DOMAIN_FILES)
+
+const ELEMENT_CROSSWALK_FILES: Array<{
+  file: string
+  sourceColumn: string
+  targetColumn: string
+  field: 'relatedWorkActivities' | 'relatedWorkContext'
+}> = ['Abilities', 'Essential Skills', 'Transferable Skills', 'Work Styles'].flatMap((source) => [
+  {
+    file: `${source} to Work Activities.txt`,
+    sourceColumn: `${source} Element ID`,
+    targetColumn: 'Work Activities Element ID',
+    field: 'relatedWorkActivities' as const,
+  },
+  {
+    file: `${source} to Work Context.txt`,
+    sourceColumn: `${source} Element ID`,
+    targetColumn: 'Work Context Element ID',
+    field: 'relatedWorkContext' as const,
+  },
+])
 
 export type ImportOptions = {
   dryRun: boolean
@@ -61,11 +82,14 @@ type ArrayItem = {_key: string; _type: string} & Record<string, unknown>
 
 const DETAIL_ARRAYS = [
   'tasks',
+  'emergingTasks',
   'jobTitles',
+  'reportedTitles',
   'softwareSkills',
   'workStyles',
   'ratings',
   'relatedOccupations',
+  'surveyMetadata',
 ] as const
 
 type DetailArray = (typeof DETAIL_ARRAYS)[number]
@@ -84,6 +108,11 @@ function log(msg: string) {
 
 function arrayKey(naturalKey: string): string {
   return createHash('sha1').update(naturalKey).digest('hex').slice(0, 12)
+}
+
+/** importKey of onetRatingCategory. Task categories have no element, so elementId is ''. */
+function categoryKey(domain: string, elementId: string, scaleId: string, category: number) {
+  return `${domain}|${elementId}|${scaleId}|${category}`
 }
 
 function includeOccupation(code: string, opts: ImportOptions): boolean {
@@ -229,32 +258,35 @@ async function importRatingCategories(
   dataDir: string,
   maps: IdMaps,
 ) {
-  log('→ Education / Work Context Categories')
+  log('→ Rating Categories (education, training, work context, task)')
   const existing = await loadExistingMap(client, 'onetRatingCategory', 'importKey', (d) =>
     String(d.importKey || ''),
   )
 
-  const files: Array<{file: string; domain: 'education' | 'workContext'}> = [
+  const files: Array<{file: string; domain: string}> = [
     {file: 'Education Categories.txt', domain: 'education'},
+    {file: 'Training and Experience Categories.txt', domain: 'trainingExperience'},
     {file: 'Work Context Categories.txt', domain: 'workContext'},
+    {file: 'Task Categories.txt', domain: 'task'},
   ]
 
   const items: UpsertDoc[] = []
   for (const {file, domain} of files) {
     const rows = await collectRows(dataDir, file, opts.limit)
     for (const row of rows) {
-      const elementId = maps.elements.get(row['Element ID'])
+      const elementCode = row['Element ID'] ?? ''
+      const elementId = elementCode ? maps.elements.get(elementCode) : undefined
       const scaleId = maps.scales.get(row['Scale ID'])
-      if (!elementId || !scaleId) continue
+      if ((elementCode && !elementId) || !scaleId) continue
       const category = parseNumber(row['Category'])!
-      const key = `${domain}|${row['Element ID']}|${row['Scale ID']}|${category}`
+      const key = categoryKey(domain, elementCode, row['Scale ID'], category)
       items.push({
         _type: 'onetRatingCategory',
         _key: key,
         doc: omitUndefined({
           importKey: key,
           categoryDomain: domain,
-          element: ref(elementId),
+          element: elementId ? ref(elementId) : undefined,
           scale: ref(scaleId),
           category,
           categoryDescription: row['Category Description'] || undefined,
@@ -266,6 +298,84 @@ async function importRatingCategories(
   const result = await upsertBatch(client, existing, items, opts.dryRun)
   log(`  created ${result.created}, updated ${result.updated}`)
   return existing
+}
+
+async function importElementLinks(
+  client: SanityClient | null,
+  opts: ImportOptions,
+  dataDir: string,
+  maps: IdMaps,
+) {
+  log('→ Element links (work activity hierarchy, crosswalks, survey items)')
+  type Links = {
+    parentElement?: ReturnType<typeof ref>
+    relatedWorkActivities: Map<string, ArrayItem>
+    relatedWorkContext: Map<string, ArrayItem>
+    surveyItems: Map<string, ArrayItem>
+  }
+  const links = new Map<string, Links>()
+  const linksFor = (code: string): Links | undefined => {
+    if (!maps.elements.has(code)) return undefined
+    let entry = links.get(code)
+    if (!entry) {
+      entry = {relatedWorkActivities: new Map(), relatedWorkContext: new Map(), surveyItems: new Map()}
+      links.set(code, entry)
+    }
+    return entry
+  }
+
+  const hierarchy = [
+    {file: 'GWAs to IWAs.txt', child: 'IWA Element ID', parent: 'GWA Element ID'},
+    {file: 'GWAs to IWAs to DWAs.txt', child: 'DWA Element ID', parent: 'IWA Element ID'},
+  ]
+  for (const {file, child, parent} of hierarchy) {
+    await forEachRow(dataDir, file, opts.limit, (row) => {
+      const entry = linksFor(row[child])
+      const parentId = maps.elements.get(row[parent])
+      if (entry && parentId) entry.parentElement = ref(parentId)
+    })
+  }
+
+  for (const {file, sourceColumn, targetColumn, field} of ELEMENT_CROSSWALK_FILES) {
+    await forEachRow(dataDir, file, opts.limit, (row) => {
+      const entry = linksFor(row[sourceColumn])
+      const targetCode = row[targetColumn]
+      const targetId = maps.elements.get(targetCode)
+      if (!entry || !targetId) return
+      const _key = arrayKey(targetCode)
+      entry[field].set(_key, {_key, ...ref(targetId)})
+    })
+  }
+
+  await forEachRow(dataDir, 'Survey Booklet Locations.txt', opts.limit, (row) => {
+    const entry = linksFor(row['Element ID'])
+    const scaleId = maps.scales.get(row['Scale ID'])
+    if (!entry || !scaleId) return
+    const _key = arrayKey(`${row['Survey Item Number']}|${row['Scale ID']}`)
+    entry.surveyItems.set(_key, {
+      _key,
+      _type: 'onetSurveyItem',
+      surveyItemNumber: row['Survey Item Number'],
+      scale: ref(scaleId),
+    })
+  })
+
+  const items: UpsertDoc[] = [...links].map(([code, entry]) => ({
+    _type: 'onetContentModelElement',
+    _key: code,
+    doc: omitUndefined({
+      parentElement: entry.parentElement,
+      relatedWorkActivities: entry.relatedWorkActivities.size
+        ? [...entry.relatedWorkActivities.values()]
+        : undefined,
+      relatedWorkContext: entry.relatedWorkContext.size
+        ? [...entry.relatedWorkContext.values()]
+        : undefined,
+      surveyItems: entry.surveyItems.size ? [...entry.surveyItems.values()] : undefined,
+    }),
+  }))
+  const result = await upsertBatch(client, maps.elements, items, opts.dryRun)
+  log(`  updated ${result.updated} elements`)
 }
 
 async function importOccupations(
@@ -327,14 +437,9 @@ async function collectOccupationDetails(
     if (!includeOccupation(code, opts) || !maps.occupations.has(code)) return undefined
     let detail = details.get(code)
     if (!detail) {
-      detail = {
-        tasks: new Map(),
-        jobTitles: new Map(),
-        softwareSkills: new Map(),
-        workStyles: new Map(),
-        ratings: new Map(),
-        relatedOccupations: new Map(),
-      }
+      detail = Object.fromEntries(
+        DETAIL_ARRAYS.map((name) => [name, new Map()]),
+      ) as unknown as OccupationDetail
       details.set(code, detail)
     }
     return detail
@@ -377,6 +482,69 @@ async function collectOccupationDetails(
     })
   })
 
+  const addToTask = (
+    row: Row,
+    field: 'ratings' | 'dwas',
+    type: string,
+    naturalKey: string,
+    fields: Record<string, unknown>,
+  ) => {
+    const detail = detailFor(row['O*NET-SOC Code'])
+    const task = detail?.tasks.get(arrayKey(String(parseNumber(row['Task ID']))))
+    if (!task) return
+    const items = (task[field] ??= []) as ArrayItem[]
+    const _key = arrayKey(naturalKey)
+    if (!items.some((item) => item._key === _key)) items.push({_key, _type: type, ...fields})
+  }
+
+  log('→ Task Ratings')
+  await forEachRow(dataDir, 'Task Ratings.txt', opts.limit, (row) => {
+    const scaleId = maps.scales.get(row['Scale ID'])
+    if (!scaleId) return
+    const category = parseNumber(row['Category'])
+    const catId =
+      category != null
+        ? maps.ratingCategories.get(categoryKey('task', '', row['Scale ID'], category))
+        : undefined
+    addToTask(row, 'ratings', 'onetTaskRatingItem', `${row['Scale ID']}|${category ?? ''}`, {
+      scale: ref(scaleId),
+      ...omitUndefined({ratingCategory: catId ? ref(catId) : undefined}),
+      ...ratingFieldsFromRow(row),
+    })
+  })
+
+  log('→ Tasks to DWAs')
+  await forEachRow(dataDir, 'Tasks to DWAs.txt', opts.limit, (row) => {
+    const dwaCode = row['DWA Element ID']
+    const dwaId = maps.elements.get(dwaCode)
+    if (!dwaId) return
+    addToTask(row, 'dwas', 'onetTaskDwaItem', dwaCode, {
+      dwa: ref(dwaId),
+      ...omitUndefined({
+        dateUpdated: parseOnetDate(row['Date']),
+        domainSource: row['Domain Source'] || undefined,
+      }),
+    })
+  })
+
+  log('→ Emerging Tasks')
+  await forEachRow(dataDir, 'Emerging Tasks.txt', opts.limit, (row) => {
+    const detail = detailFor(row['O*NET-SOC Code'])
+    if (!detail) return
+    const task = row['Task']
+    add(detail, 'emergingTasks', 'onetEmergingTaskItem', task, {
+      task,
+      category: row['Category'],
+      ...omitUndefined({
+        originalTaskId: parseNumber(row['Original Task ID']),
+        originalTask:
+          row['Original Task'] && row['Original Task'] !== 'n/a' ? row['Original Task'] : undefined,
+        dateUpdated: parseOnetDate(row['Date']),
+        domainSource: row['Domain Source'] || undefined,
+      }),
+    })
+  })
+
   log('→ Job Titles')
   await forEachRow(dataDir, 'Job Titles.txt', opts.limit, (row) => {
     const detail = detailFor(row['O*NET-SOC Code'])
@@ -387,6 +555,33 @@ async function collectOccupationDetails(
       ...omitUndefined({
         shortTitle: row['Short Title'] || undefined,
         sources: row['Source(s)'] || undefined,
+      }),
+    })
+  })
+
+  log('→ Sample of Reported Titles')
+  await forEachRow(dataDir, 'Sample of Reported Titles.txt', opts.limit, (row) => {
+    const detail = detailFor(row['O*NET-SOC Code'])
+    if (!detail) return
+    const title = row['Reported Job Title']
+    add(detail, 'reportedTitles', 'onetReportedTitleItem', title, {
+      reportedJobTitle: title,
+      ...omitUndefined({shownInMyNextMove: parseYesNo(row['Shown in My Next Move'])}),
+    })
+  })
+
+  log('→ Occupation Level Metadata')
+  await forEachRow(dataDir, 'Occupation Level Metadata.txt', opts.limit, (row) => {
+    const detail = detailFor(row['O*NET-SOC Code'])
+    if (!detail) return
+    const response = row['Response'] && row['Response'] !== 'n/a' ? row['Response'] : undefined
+    add(detail, 'surveyMetadata', 'onetOccupationMetadataItem', `${row['Item']}|${response ?? ''}`, {
+      item: row['Item'],
+      ...omitUndefined({
+        response,
+        n: parseNumber(row['N']),
+        percent: parseNumber(row['Percent']),
+        dateUpdated: parseOnetDate(row['Date']),
       }),
     })
   })
@@ -452,7 +647,7 @@ async function collectOccupationDetails(
       let ratingCategory: ReturnType<typeof ref> | undefined
       if (spec.hasCategory && category != null) {
         const catId = maps.ratingCategories.get(
-          `${spec.domain}|${row['Element ID']}|${row['Scale ID']}|${category}`,
+          categoryKey(spec.domain, row['Element ID'], row['Scale ID'], category),
         )
         if (catId) ratingCategory = ref(catId)
       }
@@ -490,6 +685,8 @@ async function importOccupationDetails(
     number
   >
 
+  const taskTotals = {ratings: 0, dwas: 0}
+
   for (const code of codes) {
     const detail = details.get(code)
     const set: Record<string, unknown> = {}
@@ -497,6 +694,10 @@ async function importOccupationDetails(
       const items = detail ? [...detail[name].values()] : []
       set[name] = items
       totals[name] += items.length
+    }
+    for (const task of detail?.tasks.values() ?? []) {
+      taskTotals.ratings += (task.ratings as unknown[] | undefined)?.length ?? 0
+      taskTotals.dwas += (task.dwas as unknown[] | undefined)?.length ?? 0
     }
     const unset: string[] = []
     if (detail?.jobZone) set.jobZone = detail.jobZone
@@ -511,6 +712,7 @@ async function importOccupationDetails(
   }
 
   for (const name of DETAIL_ARRAYS) log(`  ${name}: ${totals[name]} items`)
+  log(`  tasks[].ratings: ${taskTotals.ratings} items, tasks[].dwas: ${taskTotals.dwas} items`)
   log(`  largest occupation payload: ${largest.code} (${Math.round(largest.bytes / 1024)} KB)`)
 
   if (opts.dryRun || !client) return
@@ -569,6 +771,7 @@ export async function runImport(client: SanityClient | null, opts: ImportOptions
     maps.jobZones = await importJobZoneReference(client, opts, dataDir)
     await importLevelScaleAnchors(client, opts, dataDir, maps)
     maps.ratingCategories = await importRatingCategories(client, opts, dataDir, maps)
+    await importElementLinks(client, opts, dataDir, maps)
   } else {
     maps.scales = await loadExistingMap(client, 'onetScale', 'scaleId, importKey', (d) =>
       String(d.importKey || d.scaleId || ''),
