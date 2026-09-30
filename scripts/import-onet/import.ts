@@ -11,11 +11,12 @@ import {
   ref,
   type Row,
 } from './parse'
+import {importInterests} from './interests'
 import {loadExistingMap, upsertBatch, type UpsertDoc} from './upsert'
 
-export type ImportPhase = 'references' | 'occupations' | 'details'
+export type ImportPhase = 'references' | 'occupations' | 'details' | 'interests'
 
-export const DEFAULT_PHASES: ImportPhase[] = ['references', 'occupations', 'details']
+export const DEFAULT_PHASES: ImportPhase[] = ['references', 'occupations', 'details', 'interests']
 
 export const RATING_DOMAIN_FILES: Record<
   string,
@@ -602,6 +603,10 @@ export async function runImport(client: SanityClient | null, opts: ImportOptions
 
   if (opts.phases.includes('details')) {
     await importOccupationDetails(client, opts, dataDir, maps)
+  }
+
+  if (opts.phases.includes('interests')) {
+    await importInterests(client, opts, dataDir, maps)
   }
 
   log('Done.')

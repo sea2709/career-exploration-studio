@@ -14,6 +14,8 @@
     "import:onet": "tsx scripts/import-onet/index.ts",
     "import:onet:dry": "tsx scripts/import-onet/index.ts --dry-run",
     "cleanup:onet": "tsx scripts/import-onet/cleanup.ts",
+    "seed:coaching": "tsx scripts/coaching-kb/seed.ts",
+    "kb:coaching": "tsx scripts/coaching-kb/setup.ts",
     "typegen": "sanity schemas extract --force && sanity typegen generate"
   },
   "keywords": [

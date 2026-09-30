@@ -1,0 +1,127 @@
+#!/usr/bin/env tsx
+/**
+ * Create (or reuse) the interview coaching Knowledge Base, import the published
+ * `coachingGuide` documents into it, and build it.
+ *
+ * The first run builds the Knowledge Base. Later runs refresh it, which re-reads the guides and
+ * files change issues to review in the Sanity dashboard. Pass --rebuild to force a full build.
+ *
+ * Usage:
+ *   npm run kb:coaching
+ *   npm run kb:coaching -- --rebuild
+ *
+ * Needs SANITY_ORGANIZATION_ID, and a token (or `sanity login` user) that can create knowledge
+ * bases in the organization and has the Administrator or Developer role on the project.
+ */
+import {createClient, type SanityClient} from '@sanity/client'
+import {getAuthToken, getProjectDataset} from '../import-onet/client'
+
+const API_VERSION = '2026-08-25'
+const KB_TITLE = 'Interview coaching guidance'
+const KB_DESCRIPTION =
+  'Career counselor guidance for the Mock Interview Coach: answer structure, question types, grading, feedback, and practice.'
+const GUIDES_QUERY = `*[_type == "coachingGuide" && !(_id in path("drafts.**"))]{title, category, jobZones, summary, "guidance": pt::text(body)}`
+const JOB_TIMEOUT_MS = 20 * 60 * 1000
+
+async function waitForJob(kb: SanityClient, jobId: string) {
+  const started = Date.now()
+  for (;;) {
+    const job = await kb.context.jobs.get({jobId})
+    if (job.status === 'succeeded' || job.status === 'failed' || job.status === 'cancelled') {
+      process.stdout.write('\n')
+      return job
+    }
+    if (Date.now() - started > JOB_TIMEOUT_MS) {
+      throw new Error(`Timed out waiting for job ${jobId}. Check its progress in the Sanity dashboard.`)
+    }
+    process.stdout.write('.')
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+  }
+}
+
+async function main() {
+  const organizationId = process.env.SANITY_ORGANIZATION_ID
+  if (!organizationId) {
+    throw new Error('Set SANITY_ORGANIZATION_ID in studio/.env (see .env.example).')
+  }
+  const token = getAuthToken()
+  const {projectId, dataset} = getProjectDataset()
+  const forceRebuild = process.argv.includes('--rebuild')
+
+  const org = createClient({apiVersion: API_VERSION, token, useCdn: false, useProjectHostname: false})
+
+  let kbId = process.env.COACHING_KB_ID
+  if (!kbId) {
+    const created = await org.context.knowledgeBases.create({
+      organizationId,
+      title: KB_TITLE,
+      description: KB_DESCRIPTION,
+    })
+    kbId = created.publicId
+    console.log(`Created knowledge base ${kbId}. Add COACHING_KB_ID=${kbId} to studio/.env.`)
+  }
+
+  const kb = createClient({
+    apiVersion: API_VERSION,
+    token,
+    useCdn: false,
+    resource: {type: 'knowledge-base', id: kbId},
+    context: {organizationId},
+  })
+
+  const {data: imports} = await kb.context.imports.list()
+  const datasetImport = imports.find(
+    (i) =>
+      i.sourceKind === 'dataset' &&
+      i.datasetSource?.sanityProjectId === projectId &&
+      i.datasetSource?.sanityDatasetId === dataset,
+  )
+  if (!datasetImport) {
+    await kb.context.imports.create({
+      type: 'dataset',
+      sanityProjectId: projectId,
+      sanityDatasetId: dataset,
+      query: GUIDES_QUERY,
+    })
+    console.log(`Imported coaching guides from ${projectId}/${dataset}.`)
+  } else if (datasetImport.datasetSource?.query !== GUIDES_QUERY) {
+    console.warn(
+      `The existing dataset import (${datasetImport.id}) uses a different query. Delete it in the dashboard and re-run to import with the current query.`,
+    )
+  }
+
+  try {
+    await org.context.knowledgeBases.edit(kbId, {refreshEnabled: true, refreshFrequency: 'weekly'})
+  } catch (error) {
+    console.warn(
+      `Couldn't enable weekly refresh: ${error instanceof Error ? error.message : error}`,
+    )
+  }
+
+  const before = await org.context.knowledgeBases.get(kbId)
+  const shouldBuild = forceRebuild || before.state === 'created'
+  const {jobId} = shouldBuild ? await kb.context.build() : await kb.context.refresh()
+  process.stdout.write(`${shouldBuild ? 'Building' : 'Refreshing'} (job ${jobId})`)
+
+  const job = await waitForJob(kb, jobId)
+  if (job.status !== 'succeeded') {
+    throw new Error(`Job ${jobId} ${job.status}${job.error ? `: ${job.error}` : ''}`)
+  }
+
+  const after = await org.context.knowledgeBases.get(kbId)
+  const openIssues = await kb.context.issues.list({status: 'open'})
+  console.log(`Knowledge base ${kbId} is ${after.state}.`)
+  if (after.sourceUsage) {
+    console.log(`Sources: ${after.sourceUsage.used} of ${after.sourceUsage.limit}.`)
+  }
+  if (openIssues.length) {
+    console.log(
+      `${openIssues.length} open issue(s), such as conflicting guidance. Review them in the Sanity dashboard under Context → Knowledge Bases.`,
+    )
+  }
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})

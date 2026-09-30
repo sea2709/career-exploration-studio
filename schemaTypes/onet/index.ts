@@ -1,4 +1,6 @@
 import {onetContentModelElement} from './reference/contentModelElement'
+import {onetInterest} from './reference/interest'
+import {onetInterestAreaScore} from './objects/interestAreaScore'
 import {onetJobZone} from './reference/jobZone'
 import {onetRatingCategory} from './reference/ratingCategory'
 import {onetScale} from './reference/scale'
@@ -19,6 +21,7 @@ export const onetSchemaTypes = [
   onetJobZone,
   onetRatingCategory,
   onetLevelScaleAnchor,
+  onetInterest,
   // Occupation hub
   onetOccupation,
   // Occupation-specific rows embedded in onetOccupation
@@ -28,4 +31,5 @@ export const onetSchemaTypes = [
   onetWorkStyleItem,
   onetRatingItem,
   onetRelatedOccupationItem,
+  onetInterestAreaScore,
 ]

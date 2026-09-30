@@ -18,6 +18,7 @@ export const onetOccupation = defineType({
     {name: 'skills', title: 'Software Skills'},
     {name: 'ratings', title: 'Ratings'},
     {name: 'related', title: 'Related'},
+    {name: 'interests', title: 'Interests'},
   ],
   fields: [
     importKeyField,
@@ -110,6 +111,38 @@ export const onetOccupation = defineType({
       group: 'related',
       readOnly: true,
       of: [defineArrayMember({type: 'onetRelatedOccupationItem'})],
+    }),
+    defineField({
+      name: 'interestProfile',
+      title: 'Interest Profile',
+      type: 'object',
+      description: 'From career_interest_types (RIASEC) and specific_interest_areas',
+      group: 'interests',
+      readOnly: true,
+      fields: [
+        defineField({
+          name: 'riasec',
+          title: 'RIASEC Scores',
+          type: 'object',
+          description: 'Occupational Interests scale (OI), 1–7',
+          fields: ['realistic', 'investigative', 'artistic', 'social', 'enterprising', 'conventional'].map(
+            (name) => defineField({name, type: 'number'}),
+          ),
+        }),
+        defineField({
+          name: 'highPoints',
+          title: 'Interest High-Points',
+          type: 'array',
+          description: 'Top career interest types in order (IH scale)',
+          of: [defineArrayMember({type: 'string'})],
+        }),
+        defineField({
+          name: 'areas',
+          title: 'Specific Interest Areas',
+          type: 'array',
+          of: [defineArrayMember({type: 'onetInterestAreaScore'})],
+        }),
+      ],
     }),
   ],
   preview: {

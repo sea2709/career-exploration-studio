@@ -32,3 +32,6 @@
 
 # O*NET source downloads (large)
 /data
+
+# git worktrees
+.worktrees/

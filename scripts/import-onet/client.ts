@@ -23,18 +23,25 @@ function readCliAuthToken(): string | undefined {
 const token =
   process.env.SANITY_API_WRITE_TOKEN || process.env.SANITY_AUTH_TOKEN || readCliAuthToken()
 
-export function getWriteClient(): SanityClient {
+export function getAuthToken(): string {
   if (!token) {
     throw new Error(
       'No Sanity auth found. Run `npx sanity login`, or set SANITY_API_WRITE_TOKEN in studio/.env',
     )
   }
+  return token
+}
 
+export function getProjectDataset(): {projectId: string; dataset: string} {
+  return {projectId, dataset}
+}
+
+export function getWriteClient(): SanityClient {
   return createClient({
     projectId,
     dataset,
     apiVersion: '2025-01-01',
-    token,
+    token: getAuthToken(),
     useCdn: false,
   })
 }

@@ -6,6 +6,7 @@
  *   npm run import:onet -- --dry-run
  *   npm run import:onet -- --limit 50
  *   npm run import:onet -- --phases details
+ *   npm run import:onet -- --phases interests
  *   npm run import:onet -- --occupations 15-1252.00,11-1011.00
  *   npm run import:onet -- --rating-domains essentialSkills,knowledge
  *   npm run import:onet -- --all-ratings   # includes workContext (~305k rows)

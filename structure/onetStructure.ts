@@ -8,6 +8,7 @@ const ONET_REFERENCE_TYPES = [
   'onetJobZone',
   'onetRatingCategory',
   'onetLevelScaleAnchor',
+  'onetInterest',
 ]
 
 export const ONET_TYPE_NAMES = ['onetOccupation', ...ONET_REFERENCE_TYPES]
