@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto'
 import type {SanityClient} from '@sanity/client'
 
 const BATCH_SIZE = 80
@@ -11,7 +12,8 @@ export type UpsertDoc = {
 
 /**
  * Idempotent create-or-patch using an in-memory map of existing natural-key → _id.
- * Lets Sanity generate `_id` on create (per Sanity migration guidance).
+ * New documents get a random `_id` assigned here: transaction results are not returned in
+ * mutation order, so mapping server-generated ids back to keys by index scrambles references.
  */
 export async function upsertBatch(
   client: SanityClient | null,
@@ -37,7 +39,7 @@ export async function upsertBatch(
     }
 
     const tx = client.transaction()
-    const creates: UpsertDoc[] = []
+    const creates = new Map<string, string>()
 
     for (const item of chunk) {
       const id = existing.get(item._key)
@@ -45,29 +47,16 @@ export async function upsertBatch(
         tx.patch(id, {set: item.doc})
         updated++
       } else {
-        creates.push(item)
+        const newId = randomUUID()
+        tx.create({_id: newId, _type: item._type, ...item.doc})
+        creates.set(item._key, newId)
         created++
       }
     }
 
-    for (const item of creates) {
-      tx.create({_type: item._type, ...item.doc})
-    }
+    await tx.commit({visibility: 'async'})
 
-    const result = await tx.commit({visibility: 'async'})
-
-    if (creates.length > 0) {
-      const createResults = result.results.filter((r) => r.operation === 'create')
-      if (createResults.length === creates.length) {
-        for (let j = 0; j < creates.length; j++) {
-          existing.set(creates[j]._key, createResults[j].id)
-        }
-      } else {
-        console.warn(
-          `  warn: create result count mismatch (${createResults.length} vs ${creates.length}) for ${creates[0]?._type}`,
-        )
-      }
-    }
+    for (const [key, id] of creates) existing.set(key, id)
 
     process.stdout.write(`  … ${Math.min(i + chunk.length, items.length)}/${items.length}\r`)
   }
