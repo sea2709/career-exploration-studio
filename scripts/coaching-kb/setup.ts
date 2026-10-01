@@ -7,8 +7,8 @@
  * files change issues to review in the Sanity dashboard. Pass --rebuild to force a full build.
  *
  * Usage:
- *   npm run kb:coaching
- *   npm run kb:coaching -- --rebuild
+ *   pnpm kb:coaching
+ *   pnpm kb:coaching --rebuild
  *
  * Needs SANITY_ORGANIZATION_ID, and a token (or `sanity login` user) that can create knowledge
  * bases in the organization and has the Administrator or Developer role on the project.

@@ -4,8 +4,8 @@
  * so re-running never overwrites edits made in Studio.
  *
  * Usage:
- *   npm run seed:coaching -- --dry-run
- *   npm run seed:coaching
+ *   pnpm seed:coaching --dry-run
+ *   pnpm seed:coaching
  */
 import {randomUUID} from 'node:crypto'
 import {getProjectDataset, getWriteClient} from '../import-onet/client'

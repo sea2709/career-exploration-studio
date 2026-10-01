@@ -4,8 +4,8 @@
  * arrays on onetOccupation.
  *
  * Usage:
- *   npm run cleanup:onet -- --dry-run
- *   npm run cleanup:onet
+ *   pnpm cleanup:onet --dry-run
+ *   pnpm cleanup:onet
  */
 import {getWriteClient} from './client'
 

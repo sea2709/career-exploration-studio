@@ -3,12 +3,12 @@
  * Import O*NET 31.0 tabular text files into Sanity.
  *
  * Usage:
- *   npm run import:onet -- --dry-run
- *   npm run import:onet -- --limit 50
- *   npm run import:onet -- --phases details
- *   npm run import:onet -- --phases interests
- *   npm run import:onet -- --occupations 15-1252.00,11-1011.00
- *   npm run import:onet -- --rating-domains essentialSkills,knowledge
+ *   pnpm import:onet --dry-run
+ *   pnpm import:onet --limit 50
+ *   pnpm import:onet --phases details
+ *   pnpm import:onet --phases interests
+ *   pnpm import:onet --occupations 15-1252.00,11-1011.00
+ *   pnpm import:onet --rating-domains essentialSkills,knowledge
  *
  * Only reference tables and occupations become documents; per-occupation rows are
  * embedded as arrays on onetOccupation (phase "details"), and element-level rows
