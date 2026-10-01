@@ -17,6 +17,7 @@
     "seed:coaching": "tsx scripts/coaching-kb/seed.ts",
     "kb:coaching": "tsx scripts/coaching-kb/setup.ts",
     "workflow:coaching": "tsx scripts/coaching-kb/workflow.ts",
+    "setup:quizzes": "tsx scripts/career-quizzes/setup.ts",
     "typegen": "sanity schemas extract --force && sanity typegen generate"
   },
   "keywords": [

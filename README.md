@@ -27,3 +27,20 @@ The definition lives in `schemaTypes/coaching/coachingWorkflow.ts`. To set it up
 2. Tasks live in the comments addon dataset. If nobody has added a comment or task in this Studio yet, add one to any document once, or task creation and gating silently do nothing.
 3. On each guide, set the Author and Reviewing counselor under **Assignments**. Role-bound tasks are only created once the role has an assignee.
 4. For the Coach test stage, run `pnpm kb:coaching --staging` once to create a staging Knowledge Base (save the printed `COACHING_STAGING_KB_ID`), create a Context MCP endpoint for it in the Sanity dashboard, and point a local agent's `SANITY_COACHING_MCP_URL` at that endpoint.
+
+## Career quiz review workflow
+
+Every published `careerQuiz` appears in the "Other career quizzes" list on the web app's `/quiz` page (read by `web/src/pages/api/career-quizzes.ts`). Studio users submit quizzes by creating a Career Quiz document, and it goes through the same kind of workflow before publishing. The workflow types are shared with coaching guides (`schemaTypes/workflow.ts`); the definition lives in `schemaTypes/careerQuizzes/careerQuizWorkflow.ts`.
+
+| Stage            | Who                 | Required tasks (completion gating on)                                     |
+| ---------------- | ------------------- | ------------------------------------------------------------------------- |
+| Draft            | Submitter           | Check the list for the same quiz                                          |
+| Counselor review | Reviewing counselor | Check the provider is trustworthy; check the description, focus, and cost |
+| Quiz test        | Reviewing counselor | Take the quiz end to end. Optional: try it on a phone                     |
+| Approved         |                     | Publishing allowed                                                        |
+
+**Retired** is an off-ramp for dead links, quizzes that became paid, or providers that no longer pass review. Only a Reviewing counselor can use it. It unpublishes the quiz and keeps the document in Studio.
+
+To set it up, run `pnpm setup:quizzes --dry-run`, then `pnpm setup:quizzes`. This creates the `workflow.definition` document and the starter quizzes (published, at Approved). After that, edit the workflow in Studio under **Career Quizzes → Review workflow**, and keep the stage slugs. The coaching notes above about the comments addon dataset and Assignments apply here too.
+
+The Focus and Cost options (`QUIZ_FOCUSES` and `QUIZ_COSTS` in `careerQuiz.ts`) are mirrored as label maps in `web/src/components/OtherCareerQuizzes.tsx`.

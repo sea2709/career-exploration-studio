@@ -1,6 +1,7 @@
 import type {StructureBuilder} from 'sanity/structure'
 import {CommentIcon} from '@sanity/icons/Comment'
 import {COACHING_STAGES, RETIRED_STAGE} from '../schemaTypes/coaching/coachingWorkflow'
+import {reviewWorkflowItem} from './workflowStructure'
 
 export const COACHING_TYPE_NAMES = ['coachingGuide', 'workflow.definition']
 
@@ -32,7 +33,7 @@ export function coachingStructureItems(S: StructureBuilder) {
             ...COACHING_STAGES.map(stageList),
             stageList(RETIRED_STAGE),
             S.divider(),
-            S.documentTypeListItem('workflow.definition').title('Review workflow'),
+            reviewWorkflowItem(S, 'coachingGuide'),
           ]),
       ),
   ]
