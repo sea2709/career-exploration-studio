@@ -26,7 +26,7 @@ const token =
 export function getAuthToken(): string {
   if (!token) {
     throw new Error(
-      'No Sanity auth found. Run `npx sanity login`, or set SANITY_API_WRITE_TOKEN in studio/.env',
+      'No Sanity auth found. Run `pnpm exec sanity login`, or set SANITY_API_WRITE_TOKEN in studio/.env',
     )
   }
   return token
