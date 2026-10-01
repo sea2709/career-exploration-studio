@@ -1,7 +1,8 @@
 #!/usr/bin/env tsx
 /**
  * Create the starter `coachingGuide` documents. Guides whose title already exists are skipped,
- * so re-running never overwrites edits made in Studio.
+ * so re-running never overwrites edits made in Studio. New guides are drafts at the first
+ * workflow stage, so they go through counselor review before reaching the Knowledge Base.
  *
  * Usage:
  *   pnpm seed:coaching --dry-run
@@ -9,6 +10,7 @@
  */
 import {randomUUID} from 'node:crypto'
 import {getProjectDataset, getWriteClient} from '../import-onet/client'
+import {COACHING_STAGES} from '../../schemaTypes/coaching/coachingWorkflow'
 import {guides} from './guides'
 
 type Span = {_type: 'span'; _key: string; text: string; marks: string[]}
@@ -83,7 +85,9 @@ async function main() {
   const tx = client.transaction()
   for (const {body, jobZones, ...guide} of missing) {
     tx.create({
+      _id: `drafts.${randomUUID()}`,
       _type: 'coachingGuide',
+      status: COACHING_STAGES[0].slug,
       ...guide,
       ...(jobZones?.length ? {jobZones} : {}),
       body: toPortableText(body),
@@ -91,7 +95,7 @@ async function main() {
   }
   await tx.commit({visibility: 'async'})
 
-  for (const guide of missing) console.log(`  created: ${guide.title}`)
+  for (const guide of missing) console.log(`  created draft: ${guide.title}`)
 }
 
 main().catch((err) => {

@@ -16,12 +16,15 @@
     "cleanup:onet": "tsx scripts/import-onet/cleanup.ts",
     "seed:coaching": "tsx scripts/coaching-kb/seed.ts",
     "kb:coaching": "tsx scripts/coaching-kb/setup.ts",
+    "workflow:coaching": "tsx scripts/coaching-kb/workflow.ts",
     "typegen": "sanity schemas extract --force && sanity typegen generate"
   },
   "keywords": [
     "sanity"
   ],
   "dependencies": {
+    "@sanity-labs/sanity-plugin-workflows": "^0.8.0",
+    "@sanity-labs/workflow-kit": "^0.6.0",
     "@sanity/client": "^8.6.2",
     "@sanity/context": "^2.1.0",
     "@sanity/icons": "^5.2.2",
