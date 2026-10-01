@@ -1,5 +1,6 @@
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {CommentIcon} from '@sanity/icons/Comment'
+import {COACHING_STAGES, RETIRED_STAGE} from './coachingWorkflow'
 
 export const COACHING_CATEGORIES = [
   {title: 'Answering well', value: 'answering'},
@@ -14,15 +15,23 @@ export const COACHING_CATEGORIES = [
 
 /**
  * Interview coaching guidance written by career counselors. The Mock Interview Coach reads
- * these through a Sanity Context Knowledge Base, which imports every published guide.
- * Prefer editing a guide over adding a near-duplicate: the build merges overlapping guides and
- * raises conflict issues when they disagree.
+ * these through a Sanity Context Knowledge Base, which imports every published guide, and the
+ * web app lists them beside the interview. Prefer editing a guide over adding a near-duplicate:
+ * the build merges overlapping guides and raises conflict issues when they disagree.
+ *
+ * Guides go through the review workflow in `coachingWorkflow.ts`, which adds the `status`,
+ * `assignments`, and audit trail fields and only allows publishing at Approved.
  */
 export const coachingGuide = defineType({
   name: 'coachingGuide',
   title: 'Coaching Guide',
   type: 'document',
   icon: CommentIcon,
+  // The workflow's publish gate lets documents without a stage through, so require one.
+  validation: (rule) =>
+    rule.custom((doc) =>
+      doc?.status ? true : 'Add the guide to the review workflow before publishing.',
+    ),
   fields: [
     defineField({
       name: 'title',
@@ -86,11 +95,14 @@ export const coachingGuide = defineType({
     },
   ],
   preview: {
-    select: {title: 'title', category: 'category'},
-    prepare({title, category}) {
+    select: {title: 'title', category: 'category', status: 'status'},
+    prepare({title, category, status}) {
+      const stage = [...COACHING_STAGES, RETIRED_STAGE].find((s) => s.slug === status)
       return {
         title,
-        subtitle: COACHING_CATEGORIES.find((c) => c.value === category)?.title,
+        subtitle: [COACHING_CATEGORIES.find((c) => c.value === category)?.title, stage?.label]
+          .filter(Boolean)
+          .join(' · '),
       }
     },
   },

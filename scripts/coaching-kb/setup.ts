@@ -6,21 +6,42 @@
  * The first run builds the Knowledge Base. Later runs refresh it, which re-reads the guides and
  * files change issues to review in the Sanity dashboard. Pass --rebuild to force a full build.
  *
+ * Pass --staging to manage a second Knowledge Base for the workflow's Coach test stage. It also
+ * imports the drafts of guides in Coach test or Approved, in place of their published versions,
+ * so a local agent pointed at it shows how a guide changes grading before it's published.
+ *
  * Usage:
- *   npm run kb:coaching
- *   npm run kb:coaching -- --rebuild
+ *   pnpm kb:coaching
+ *   pnpm kb:coaching --rebuild
+ *   pnpm kb:coaching --staging
  *
  * Needs SANITY_ORGANIZATION_ID, and a token (or `sanity login` user) that can create knowledge
  * bases in the organization and has the Administrator or Developer role on the project.
  */
 import {createClient, type SanityClient} from '@sanity/client'
 import {getAuthToken, getProjectDataset} from '../import-onet/client'
+import {TESTABLE_STAGES} from '../../schemaTypes/coaching/coachingWorkflow'
 
 const API_VERSION = '2026-08-25'
-const KB_TITLE = 'Interview coaching guidance'
-const KB_DESCRIPTION =
-  'Career counselor guidance for the Mock Interview Coach: answer structure, question types, grading, feedback, and practice.'
-const GUIDES_QUERY = `*[_type == "coachingGuide" && !(_id in path("drafts.**"))]{title, category, jobZones, summary, "guidance": pt::text(body)}`
+const GUIDE_PROJECTION = `{title, category, jobZones, summary, "guidance": pt::text(body)}`
+const TESTABLE_DRAFT = `_type == "coachingGuide" && _id in path("drafts.**") && status in ${JSON.stringify(TESTABLE_STAGES)}`
+
+const KNOWLEDGE_BASES = {
+  production: {
+    title: 'Interview coaching guidance',
+    description:
+      'Career counselor guidance for the Mock Interview Coach: answer structure, question types, grading, feedback, and practice.',
+    idEnv: 'COACHING_KB_ID',
+    query: `*[_type == "coachingGuide" && !(_id in path("drafts.**"))]${GUIDE_PROJECTION}`,
+  },
+  staging: {
+    title: 'Interview coaching guidance (staging)',
+    description:
+      'Published coaching guides plus drafts in Coach test or Approved, for testing guides in the Mock Interview Coach before publishing.',
+    idEnv: 'COACHING_STAGING_KB_ID',
+    query: `*[(${TESTABLE_DRAFT}) || (_type == "coachingGuide" && !(_id in path("drafts.**")) && !(("drafts." + _id) in *[${TESTABLE_DRAFT}]._id))]${GUIDE_PROJECTION}`,
+  },
+}
 const JOB_TIMEOUT_MS = 20 * 60 * 1000
 
 async function waitForJob(kb: SanityClient, jobId: string) {
@@ -47,18 +68,19 @@ async function main() {
   const token = getAuthToken()
   const {projectId, dataset} = getProjectDataset()
   const forceRebuild = process.argv.includes('--rebuild')
+  const target = KNOWLEDGE_BASES[process.argv.includes('--staging') ? 'staging' : 'production']
 
   const org = createClient({apiVersion: API_VERSION, token, useCdn: false, useProjectHostname: false})
 
-  let kbId = process.env.COACHING_KB_ID
+  let kbId = process.env[target.idEnv]
   if (!kbId) {
     const created = await org.context.knowledgeBases.create({
       organizationId,
-      title: KB_TITLE,
-      description: KB_DESCRIPTION,
+      title: target.title,
+      description: target.description,
     })
     kbId = created.publicId
-    console.log(`Created knowledge base ${kbId}. Add COACHING_KB_ID=${kbId} to studio/.env.`)
+    console.log(`Created knowledge base ${kbId}. Add ${target.idEnv}=${kbId} to studio/.env.`)
   }
 
   const kb = createClient({
@@ -81,10 +103,10 @@ async function main() {
       type: 'dataset',
       sanityProjectId: projectId,
       sanityDatasetId: dataset,
-      query: GUIDES_QUERY,
+      query: target.query,
     })
     console.log(`Imported coaching guides from ${projectId}/${dataset}.`)
-  } else if (datasetImport.datasetSource?.query !== GUIDES_QUERY) {
+  } else if (datasetImport.datasetSource?.query !== target.query) {
     console.warn(
       `The existing dataset import (${datasetImport.id}) uses a different query. Delete it in the dashboard and re-run to import with the current query.`,
     )
