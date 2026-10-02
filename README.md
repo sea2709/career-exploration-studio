@@ -12,12 +12,13 @@ Now you can do the following things:
 
 Every published `coachingGuide` feeds the Interview Coach's Knowledge Base and the guide panel on the web app's `/interview` page, so guides go through a review workflow before publishing. It runs on [`@sanity-labs/sanity-plugin-workflows`](https://github.com/sanity-labs/sanity-plugin-workflows), applied to `coachingGuide` only (see `schemaTypes/coaching/index.ts` and `sanity.config.ts`).
 
-| Stage            | Who                 | Required tasks (completion gating on)                                                       |
-| ---------------- | ------------------- | ------------------------------------------------------------------------------------------- |
-| Draft            | Author              | Check existing guides for overlap                                                           |
-| Counselor review | Reviewing counselor | Check that the Job Zones match the advice; check the guide agrees with the rating scale     |
-| Coach test       | Author, counselor   | Refresh the staging Knowledge Base; run three mock answers and confirm the grading changed |
-| Approved         | Author              | Publishing allowed. Optional: refresh the Knowledge Base                                    |
+| Stage            | Who                 | Tasks                                                                                                                       |
+| ---------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Draft            | Author              | Check existing guides for overlap                                                                                           |
+| Counselor review | Reviewing counselor | Check that the Job Zones match the advice; check the guide agrees with the rating scale                                     |
+| Approved         | Author, counselor   | Publishing allowed. After publishing: refresh the Knowledge Base and review its issues; run three mock answers in the coach |
+
+Draft and Counselor review gate on their tasks, so a guide can't move on until they're done. There's no staging Knowledge Base, so a guide can only be tried in the coach once it's published. A refresh only files issues for a new guide, so the coach uses it once those issues are applied (or after `pnpm kb:coaching --rebuild`).
 
 **Retired** is an off-ramp that only a Reviewing counselor can use. It unpublishes the guide, which takes it off the guide panel and out of the Knowledge Base at its next refresh, and keeps the document in Studio.
 
@@ -26,4 +27,3 @@ The definition lives in `schemaTypes/coaching/coachingWorkflow.ts`. To set it up
 1. Run `pnpm workflow:coaching --dry-run`, then `pnpm workflow:coaching`. This creates the `workflow.definition` document and marks existing published guides Approved (drafts start at Draft). After that, edit the workflow in Studio under **Coaching Guides → Review workflow**. Keep the stage slugs, since the Studio structure and scripts filter on them.
 2. Tasks live in the comments addon dataset. If nobody has added a comment or task in this Studio yet, add one to any document once, or task creation and gating silently do nothing.
 3. On each guide, set the Author and Reviewing counselor under **Assignments**. Role-bound tasks are only created once the role has an assignee.
-4. For the Coach test stage, run `pnpm kb:coaching --staging` once to create a staging Knowledge Base (save the printed `COACHING_STAGING_KB_ID`), create a Context MCP endpoint for it in the Sanity dashboard, and point a local agent's `SANITY_COACHING_MCP_URL` at that endpoint.

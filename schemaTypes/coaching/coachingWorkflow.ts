@@ -13,14 +13,10 @@ export const COACHING_WORKFLOW_ID = 'workflow.definition.coachingGuide'
 export const COACHING_STAGES = [
   {slug: 'draft', label: 'Draft'},
   {slug: 'counselor_review', label: 'Counselor review'},
-  {slug: 'coach_test', label: 'Coach test'},
   {slug: 'approved', label: 'Approved'},
 ] as const
 
 export const RETIRED_STAGE = {slug: 'retired', label: 'Retired'} as const
-
-/** Stages whose drafts the staging Knowledge Base imports, so testers can try them in the coach. */
-export const TESTABLE_STAGES = ['coach_test', 'approved']
 
 const AUTHOR = 'author'
 const REVIEWING_COUNSELOR = 'reviewing_counselor'
@@ -72,7 +68,7 @@ export const coachingWorkflowDefinition = {
   slug: slug('coaching-guide-review'),
   documentType: 'coachingGuide',
   description:
-    'Counselors review every coaching guide, and test it in the Interview Coach, before it reaches the Knowledge Base that grades answers.',
+    'Counselors review every coaching guide before it reaches the Knowledge Base that grades answers, then test it in the Interview Coach once it is published.',
   forwardOnly: false,
   roles: [
     {
@@ -133,43 +129,26 @@ export const coachingWorkflowDefinition = {
         ),
       ],
     }),
-    stage(2, '#8B5CF6', 'flask-conical', {
-      stageCriteria: blocks(
-        'test-criteria',
-        'Try the guide in the Interview Coach before it goes live. The staging Knowledge Base imports guides in Coach test and Approved alongside the published ones.',
-      ),
-      enableCompletionGating: true,
-      taskTemplates: [
-        task(
-          'test-refresh-staging',
-          'Refresh the staging Knowledge Base',
-          'Run `pnpm kb:coaching --staging` in studio/ so the staging Knowledge Base picks up this guide.',
-          AUTHOR,
-          1,
-        ),
-        task(
-          'test-mock-answers',
-          'Run three mock answers in the Interview Coach and confirm the grading changed as expected',
-          'Point a local agent at the staging coaching endpoint, run a mock interview where the guide applies, and give three answers. Check the ratings and feedback follow the guide.',
-          REVIEWING_COUNSELOR,
-          5,
-        ),
-      ],
-    }),
-    stage(3, '#10B981', 'circle-check', {
+    stage(2, '#10B981', 'circle-check', {
       stageCriteria: blocks(
         'approved-criteria',
-        'Publishing is allowed. Published guides appear on the Interview Coach guide panel within a few minutes and reach the coach at the next Knowledge Base refresh (weekly).',
+        'Publishing is allowed. Published guides appear on the Interview Coach guide panel within a few minutes. A Knowledge Base refresh only files issues for the new guide; the coach uses it once those issues are applied or the Knowledge Base is rebuilt.',
       ),
       enablePublishing: true,
       taskTemplates: [
         task(
           'approved-refresh',
-          'Refresh the Knowledge Base after publishing',
-          'Run `pnpm kb:coaching` in studio/ so the coach uses the guide now instead of after the weekly refresh. Review any conflict issues it reports.',
+          'Refresh the Knowledge Base and review its issues',
+          'After publishing, run `pnpm kb:coaching` in studio/. It prints the open issues the guide caused. Apply the ones that bring the guide into the entries, and send the guide back to Draft if it conflicts with existing guidance.',
           AUTHOR,
           1,
-          false,
+        ),
+        task(
+          'approved-mock-answers',
+          'Run three mock answers in the Interview Coach and confirm the grading changed as expected',
+          'Once the issues are applied, run a mock interview where the guide applies and give three answers. Check the ratings and feedback follow the guide. Otherwise, retire the guide or send it back to Draft.',
+          REVIEWING_COUNSELOR,
+          5,
         ),
       ],
     }),
