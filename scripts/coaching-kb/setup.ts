@@ -4,43 +4,26 @@
  * `coachingGuide` documents into it, and build it.
  *
  * The first run builds the Knowledge Base. Later runs refresh it, which re-reads the guides and
- * files change issues to review in the Sanity dashboard. Pass --rebuild to force a full build.
- *
- * Pass --staging to manage a second Knowledge Base for the workflow's Coach test stage. It also
- * imports the drafts of guides in Coach test or Approved, in place of their published versions,
- * so a local agent pointed at it shows how a guide changes grading before it's published.
+ * files issues for what changed without rewriting entries; the script prints them. Apply an issue
+ * to rewrite its entry, or pass --rebuild to force a full build.
  *
  * Usage:
  *   pnpm kb:coaching
  *   pnpm kb:coaching --rebuild
- *   pnpm kb:coaching --staging
  *
  * Needs SANITY_ORGANIZATION_ID, and a token (or `sanity login` user) that can create knowledge
  * bases in the organization and has the Administrator or Developer role on the project.
  */
 import {createClient, type SanityClient} from '@sanity/client'
 import {getAuthToken, getProjectDataset} from '../import-onet/client'
-import {TESTABLE_STAGES} from '../../schemaTypes/coaching/coachingWorkflow'
 
 const API_VERSION = '2026-08-25'
-const GUIDE_PROJECTION = `{title, category, jobZones, summary, "guidance": pt::text(body)}`
-const TESTABLE_DRAFT = `_type == "coachingGuide" && _id in path("drafts.**") && status in ${JSON.stringify(TESTABLE_STAGES)}`
-
-const KNOWLEDGE_BASES = {
-  production: {
-    title: 'Interview coaching guidance',
-    description:
-      'Career counselor guidance for the Mock Interview Coach: answer structure, question types, grading, feedback, and practice.',
-    idEnv: 'COACHING_KB_ID',
-    query: `*[_type == "coachingGuide" && !(_id in path("drafts.**"))]${GUIDE_PROJECTION}`,
-  },
-  staging: {
-    title: 'Interview coaching guidance (staging)',
-    description:
-      'Published coaching guides plus drafts in Coach test or Approved, for testing guides in the Mock Interview Coach before publishing.',
-    idEnv: 'COACHING_STAGING_KB_ID',
-    query: `*[(${TESTABLE_DRAFT}) || (_type == "coachingGuide" && !(_id in path("drafts.**")) && !(("drafts." + _id) in *[${TESTABLE_DRAFT}]._id))]${GUIDE_PROJECTION}`,
-  },
+const KNOWLEDGE_BASE = {
+  title: 'Interview coaching guidance',
+  description:
+    'Career counselor guidance for the Mock Interview Coach: answer structure, question types, grading, feedback, and practice.',
+  idEnv: 'COACHING_KB_ID',
+  query: `*[_type == "coachingGuide" && !(_id in path("drafts.**"))]{title, category, jobZones, summary, "guidance": pt::text(body)}`,
 }
 const JOB_TIMEOUT_MS = 20 * 60 * 1000
 
@@ -53,7 +36,9 @@ async function waitForJob(kb: SanityClient, jobId: string) {
       return job
     }
     if (Date.now() - started > JOB_TIMEOUT_MS) {
-      throw new Error(`Timed out waiting for job ${jobId}. Check its progress in the Sanity dashboard.`)
+      throw new Error(
+        `Timed out waiting for job ${jobId}. Check its progress in the Sanity dashboard.`,
+      )
     }
     process.stdout.write('.')
     await new Promise((resolve) => setTimeout(resolve, 5000))
@@ -68,19 +53,25 @@ async function main() {
   const token = getAuthToken()
   const {projectId, dataset} = getProjectDataset()
   const forceRebuild = process.argv.includes('--rebuild')
-  const target = KNOWLEDGE_BASES[process.argv.includes('--staging') ? 'staging' : 'production']
 
-  const org = createClient({apiVersion: API_VERSION, token, useCdn: false, useProjectHostname: false})
+  const org = createClient({
+    apiVersion: API_VERSION,
+    token,
+    useCdn: false,
+    useProjectHostname: false,
+  })
 
-  let kbId = process.env[target.idEnv]
+  let kbId = process.env[KNOWLEDGE_BASE.idEnv]
   if (!kbId) {
     const created = await org.context.knowledgeBases.create({
       organizationId,
-      title: target.title,
-      description: target.description,
+      title: KNOWLEDGE_BASE.title,
+      description: KNOWLEDGE_BASE.description,
     })
     kbId = created.publicId
-    console.log(`Created knowledge base ${kbId}. Add ${target.idEnv}=${kbId} to studio/.env.`)
+    console.log(
+      `Created knowledge base ${kbId}. Add ${KNOWLEDGE_BASE.idEnv}=${kbId} to studio/.env.`,
+    )
   }
 
   const kb = createClient({
@@ -103,10 +94,10 @@ async function main() {
       type: 'dataset',
       sanityProjectId: projectId,
       sanityDatasetId: dataset,
-      query: target.query,
+      query: KNOWLEDGE_BASE.query,
     })
     console.log(`Imported coaching guides from ${projectId}/${dataset}.`)
-  } else if (datasetImport.datasetSource?.query !== target.query) {
+  } else if (datasetImport.datasetSource?.query !== KNOWLEDGE_BASE.query) {
     console.warn(
       `The existing dataset import (${datasetImport.id}) uses a different query. Delete it in the dashboard and re-run to import with the current query.`,
     )
@@ -137,8 +128,15 @@ async function main() {
     console.log(`Sources: ${after.sourceUsage.used} of ${after.sourceUsage.limit}.`)
   }
   if (openIssues.length) {
+    // The dashboard's Issues page can miss issues filed by a refresh, so print them here.
+    console.log(`${openIssues.length} open issue(s):`)
+    for (const {_id, content} of openIssues) {
+      console.log(`\n- ${_id} [${content.kind}, ${content.severity}] ${content.scopePath}`)
+      console.log(`  ${content.issue}`)
+      console.log(`  Suggested fix: ${content.suggestedFix}`)
+    }
     console.log(
-      `${openIssues.length} open issue(s), such as conflicting guidance. Review them in the Sanity dashboard under Context → Knowledge Bases.`,
+      '\nApply an issue with client.context.issues.apply({issueIds}), dismiss it, or run with --rebuild.',
     )
   }
 }
