@@ -12,12 +12,12 @@ Now you can do the following things:
 
 Every published `coachingGuide` feeds the Interview Coach's Knowledge Base and the guide panel on the web app's `/interview` page, so guides go through a review workflow before publishing. It runs on [`@sanity-labs/sanity-plugin-workflows`](https://github.com/sanity-labs/sanity-plugin-workflows), applied to `coachingGuide` only (see `schemaTypes/coaching/index.ts` and `sanity.config.ts`).
 
-| Stage            | Who                 | Required tasks (completion gating on)                                                       |
-| ---------------- | ------------------- | ------------------------------------------------------------------------------------------- |
-| Draft            | Author              | Check existing guides for overlap                                                           |
-| Counselor review | Reviewing counselor | Check that the Job Zones match the advice; check the guide agrees with the rating scale     |
+| Stage            | Who                 | Required tasks (completion gating on)                                                      |
+| ---------------- | ------------------- | ------------------------------------------------------------------------------------------ |
+| Draft            | Author              | Check existing guides for overlap                                                          |
+| Counselor review | Reviewing counselor | Check that the Job Zones match the advice; check the guide agrees with the rating scale    |
 | Coach test       | Author, counselor   | Refresh the staging Knowledge Base; run three mock answers and confirm the grading changed |
-| Approved         | Author              | Publishing allowed. Optional: refresh the Knowledge Base                                    |
+| Approved         | Author              | Publishing allowed. Optional: refresh the Knowledge Base                                   |
 
 **Retired** is an off-ramp that only a Reviewing counselor can use. It unpublishes the guide, which takes it off the guide panel and out of the Knowledge Base at its next refresh, and keeps the document in Studio.
 
@@ -32,15 +32,18 @@ The definition lives in `schemaTypes/coaching/coachingWorkflow.ts`. To set it up
 
 Every published `careerQuiz` appears in the "Other career quizzes" list on the web app's `/quiz` page (read by `web/src/pages/api/career-quizzes.ts`). Studio users submit quizzes by creating a Career Quiz document, and it goes through the same kind of workflow before publishing. The workflow types are shared with coaching guides (`schemaTypes/workflow.ts`); the definition lives in `schemaTypes/careerQuizzes/careerQuizWorkflow.ts`.
 
-| Stage            | Who                 | Required tasks (completion gating on)                                     |
-| ---------------- | ------------------- | ------------------------------------------------------------------------- |
-| Draft            | Submitter           | Check the list for the same quiz                                          |
-| Counselor review | Reviewing counselor | Check the provider is trustworthy; check the description, focus, and cost |
-| Quiz test        | Reviewing counselor | Take the quiz end to end. Optional: try it on a phone                     |
-| Approved         |                     | Publishing allowed                                                        |
+| Stage           | Who             | Required tasks (completion gating on)                                                                                            |
+| --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Draft           | Submitter       | Check the list for the same quiz                                                                                                 |
+| Ready to Review |                 | None. The quiz waits for the Content Manager, who moves it to In Review                                                          |
+| In Review       | Content Manager | Check the provider is trustworthy; check the description, focus, and cost; take the quiz end to end. Optional: try it on a phone |
+| Approved        |                 | Publish moves the quiz to Published and publishes it in one step                                                                 |
+| Published       |                 | Live on `/quiz`. Small fixes can be republished here                                                                             |
 
-**Retired** is an off-ramp for dead links, quizzes that became paid, or providers that no longer pass review. Only a Reviewing counselor can use it. It unpublishes the quiz and keeps the document in Studio.
+Workflow transitions only change a quiz's `status`, so at Approved the plugin's "Move to Published" button is replaced by a single **Publish** (`actions/publishApprovedQuizAction.ts`, wired in `sanity.config.ts`). That keeps Published meaning "live on the site".
 
-To set it up, run `pnpm setup:quizzes --dry-run`, then `pnpm setup:quizzes`. This creates the `workflow.definition` document and the starter quizzes (published, at Approved). After that, edit the workflow in Studio under **Career Quizzes → Review workflow**, and keep the stage slugs. The coaching notes above about the comments addon dataset and Assignments apply here too.
+**Retired** is an off-ramp for dead links, quizzes that became paid, or providers that no longer pass review. Only a Content Manager can use it. It unpublishes the quiz and keeps the document in Studio.
+
+To set it up, run `pnpm setup:quizzes --dry-run`, then `pnpm setup:quizzes`. This creates the `workflow.definition` document and the starter quizzes (published, at Published). After that, edit the workflow in Studio under **Career Quizzes → Review workflow**, and keep the stage slugs. To roll out a changed list of stages, run it with `--replace`; it also moves quizzes off stages that no longer exist. The coaching notes above about the comments addon dataset and Assignments apply here too.
 
 The Focus and Cost options (`QUIZ_FOCUSES` and `QUIZ_COSTS` in `careerQuiz.ts`) are mirrored as label maps in `web/src/components/OtherCareerQuizzes.tsx`.

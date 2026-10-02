@@ -1,2 +1,4 @@
 allowBuilds:
   esbuild: true
+patchedDependencies:
+  '@sanity-labs/workflow-kit@0.6.0': patches/@sanity-labs__workflow-kit@0.6.0.patch
