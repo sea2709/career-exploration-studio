@@ -7,6 +7,7 @@
  * truth: edit the workflow there. Labels can change freely, but the Studio structure and the
  * coaching scripts filter on the stage slugs, so keep those stable.
  */
+import {blocks, slug, task} from '../workflow'
 
 export const COACHING_WORKFLOW_ID = 'workflow.definition.coachingGuide'
 
@@ -20,34 +21,6 @@ export const RETIRED_STAGE = {slug: 'retired', label: 'Retired'} as const
 
 const AUTHOR = 'author'
 const REVIEWING_COUNSELOR = 'reviewing_counselor'
-
-const slug = (current: string) => ({_type: 'slug', current})
-
-const blocks = (key: string, ...paragraphs: string[]) =>
-  paragraphs.map((text, i) => ({
-    _type: 'block',
-    _key: `${key}-${i}`,
-    style: 'normal',
-    markDefs: [],
-    children: [{_type: 'span', _key: `${key}-${i}-span`, text, marks: []}],
-  }))
-
-const task = (
-  key: string,
-  title: string,
-  description: string,
-  assigneeRole: string,
-  dueInDays: number,
-  required = true,
-) => ({
-  _type: 'workflow.taskTemplate',
-  _key: key,
-  title,
-  description: blocks(key, description),
-  assigneeRole,
-  dueInDays,
-  required,
-})
 
 const stage = (index: number, color: string, icon: string, fields: Record<string, unknown>) => ({
   _type: 'workflow.stage',

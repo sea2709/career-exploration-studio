@@ -1,0 +1,13 @@
+diff --git a/dist/studio.js b/dist/studio.js
+index e81ec63243387cad288c6be289ef893aca25646f..2bbcfaa0d2ff419915721e2698b67f5fe75f742e 100644
+--- a/dist/studio.js
++++ b/dist/studio.js
+@@ -131,7 +131,7 @@ async function fetchWorkflowProjectUsers(projectId, token) {
+ 			projectId,
+ 			token
+ 		});
+-		users = [...users, ...response.map((user) => ({
++		users = [...users, ...(Array.isArray(response) ? response : [response]).map((user) => ({
+ 			displayName: user.displayName,
+ 			email: user.email,
+ 			id: user.id,

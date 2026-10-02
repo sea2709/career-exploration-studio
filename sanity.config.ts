@@ -4,11 +4,16 @@ import {createWorkflowAuditInspector} from '@sanity-labs/sanity-plugin-workflows
 import {defineConfig} from 'sanity'
 import {type ListItemBuilder, structureTool} from 'sanity/structure'
 import {visionTool} from '@sanity/vision'
+import {withPublishApprovedQuiz} from './actions/publishApprovedQuizAction'
 import {schemaTypes} from './schemaTypes'
+import {CAREER_QUIZ_TYPE_NAMES, careerQuizStructureItems} from './structure/careerQuizStructure'
 import {COACHING_TYPE_NAMES, coachingStructureItems} from './structure/coachingStructure'
 import {ONET_TYPE_NAMES, onetStructureItems} from './structure/onetStructure'
 
 const workflowAuditInspector = createWorkflowAuditInspector()
+
+/** Document types passed to `withWorkflow()` in schemaTypes/index.ts. */
+const WORKFLOW_TYPES = ['coachingGuide', 'careerQuiz']
 
 export default defineConfig({
   name: 'default',
@@ -21,7 +26,12 @@ export default defineConfig({
     structureTool({
       structure: (S) => {
         const agentTypes = [CONTEXT_SCHEMA_TYPE_NAME]
-        const groupedTypes = [...ONET_TYPE_NAMES, ...COACHING_TYPE_NAMES, ...agentTypes]
+        const groupedTypes = [
+          ...ONET_TYPE_NAMES,
+          ...COACHING_TYPE_NAMES,
+          ...CAREER_QUIZ_TYPE_NAMES,
+          ...agentTypes,
+        ]
         const defaultListItems = S.documentTypeListItems().filter(
           (item: ListItemBuilder) => !groupedTypes.includes(item.getId() ?? ''),
         )
@@ -31,6 +41,7 @@ export default defineConfig({
           .items([
             ...onetStructureItems(S),
             ...coachingStructureItems(S),
+            ...careerQuizStructureItems(S),
             ...defaultListItems,
             S.divider(),
             S.listItem()
@@ -54,11 +65,12 @@ export default defineConfig({
   },
 
   document: {
-    actions: (prev, context) =>
-      context.schemaType === 'coachingGuide'
-        ? workflowAuditTrailActionResolver(prev, context)
-        : prev,
+    actions: (prev, context) => {
+      if (!WORKFLOW_TYPES.includes(context.schemaType)) return prev
+      const actions = workflowAuditTrailActionResolver(prev, context)
+      return context.schemaType === 'careerQuiz' ? withPublishApprovedQuiz(actions) : actions
+    },
     inspectors: (prev, context) =>
-      context.documentType === 'coachingGuide' ? [workflowAuditInspector, ...prev] : prev,
+      WORKFLOW_TYPES.includes(context.documentType) ? [workflowAuditInspector, ...prev] : prev,
   },
 })
