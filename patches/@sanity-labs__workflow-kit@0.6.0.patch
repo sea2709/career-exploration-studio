@@ -1,8 +1,30 @@
 diff --git a/dist/studio.js b/dist/studio.js
-index e81ec63243387cad288c6be289ef893aca25646f..2bbcfaa0d2ff419915721e2698b67f5fe75f742e 100644
+index e81ec63243387cad288c6be289ef893aca25646f..c4196d7b0e7c7f4733a9992f73325476f869499b 100644
 --- a/dist/studio.js
 +++ b/dist/studio.js
-@@ -131,7 +131,7 @@ async function fetchWorkflowProjectUsers(projectId, token) {
+@@ -32,9 +32,10 @@ function buildTaskViewPath(taskId) {
+ const MANAGEMENT_API_BASE_URL = "https://api.sanity.io";
+ const MANAGEMENT_API_VERSION = "vX";
+ const STUDIO_AUTH_TOKEN_STORAGE_PREFIX = "__studio_auth_token_";
+-function buildManagementApiUrl(path, apiVersion, searchParams) {
++function buildManagementApiUrl(path, apiVersion, searchParams, projectId) {
+ 	const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+-	const url = new URL(`${MANAGEMENT_API_BASE_URL}/${apiVersion}${normalizedPath}`);
++	const baseUrl = projectId ? `https://${projectId}.api.sanity.io` : MANAGEMENT_API_BASE_URL;
++	const url = new URL(`${baseUrl}/${apiVersion}${normalizedPath}`);
+ 	for (const [key, value] of Object.entries(searchParams ?? {})) if (value !== null && value !== void 0) url.searchParams.set(key, String(value));
+ 	return url.toString();
+ }
+@@ -87,7 +88,7 @@ async function requestManagementApi(path, options = {}) {
+ 		projectId,
+ 		token
+ 	});
+-	const response = await fetch(buildManagementApiUrl(path, apiVersion, searchParams), {
++	const response = await fetch(buildManagementApiUrl(path, apiVersion, searchParams, projectId), {
+ 		...requestInit,
+ 		credentials: "include",
+ 		headers: {
+@@ -131,7 +132,7 @@ async function fetchWorkflowProjectUsers(projectId, token) {
  			projectId,
  			token
  		});
