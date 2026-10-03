@@ -37,13 +37,12 @@ Every published `careerQuiz` appears in the "Other career quizzes" list on the w
 | Draft           | Submitter       | Check the list for the same quiz                                                                                                 |
 | Ready to Review |                 | None. The quiz waits for the Content Manager, who moves it to In Review                                                          |
 | In Review       | Content Manager | Check the provider is trustworthy; check the description, focus, and cost; take the quiz end to end. Optional: try it on a phone |
-| Approved        |                 | Publish moves the quiz to Published and publishes it in one step                                                                 |
-| Published       |                 | Live on `/quiz`. Small fixes can be republished here                                                                             |
+| Approved        |                 | Live on `/quiz`. Small fixes can be republished here                                                                             |
 
-Workflow transitions only change a quiz's `status`, so at Approved the plugin's "Move to Published" button is replaced by a single **Publish** (`actions/publishApprovedQuizAction.ts`, wired in `sanity.config.ts`). That keeps Published meaning "live on the site".
+Workflow transitions only change a quiz's `status`, so at In Review the plugin's "Move to Approved" button becomes **Approve and publish** (`actions/publishOnApproveAction.ts`, wired in `sanity.config.ts`). It keeps the plugin's task gating and confirm dialog, then publishes the quiz, so Approved means "live on the site". If the publish fails, the quiz stays at Approved with the regular **Publish** button to retry. Picking Approved in the status bar only changes the stage; click **Publish** afterwards.
 
 **Retired** is an off-ramp for dead links, quizzes that became paid, or providers that no longer pass review. Only a Content Manager can use it. It unpublishes the quiz and keeps the document in Studio.
 
-To set it up, run `pnpm setup:quizzes --dry-run`, then `pnpm setup:quizzes`. This creates the `workflow.definition` document and the starter quizzes (published, at Published). After that, edit the workflow in Studio under **Career Quizzes → Review workflow**, and keep the stage slugs. To roll out a changed list of stages, run it with `--replace`; it also moves quizzes off stages that no longer exist. The coaching notes above about the comments addon dataset and Assignments apply here too.
+To set it up, run `pnpm setup:quizzes --dry-run`, then `pnpm setup:quizzes`. This creates the `workflow.definition` document and the starter quizzes (published, at Approved). After that, edit the workflow in Studio under **Career Quizzes → Review workflow**, and keep the stage slugs. To roll out a changed list of stages, run it with `--replace`; it also moves quizzes off stages that no longer exist. The coaching notes above about the comments addon dataset and Assignments apply here too.
 
 The Focus and Cost options (`QUIZ_FOCUSES` and `QUIZ_COSTS` in `careerQuiz.ts`) are mirrored as label maps in `web/src/components/OtherCareerQuizzes.tsx`.

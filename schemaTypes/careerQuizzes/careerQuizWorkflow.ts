@@ -2,9 +2,9 @@
  * Review workflow for career quizzes, run by `@sanity-labs/sanity-plugin-workflows`.
  *
  * Every published quiz appears in the "Other career quizzes" list on the web app's /quiz page,
- * so publishing is only allowed from Approved on. At Approved, `publishApprovedQuizAction` turns
- * the plugin's "Move to Published" button into a single Publish that also moves the quiz to
- * Published. `pnpm setup:quizzes` creates the `workflow.definition` document from this file.
+ * so publishing is only allowed at Approved, the last stage. `publishOnApproveAction` turns the
+ * plugin's "Move to Approved" button into "Approve and publish", so an approved quiz is always
+ * live. `pnpm setup:quizzes` creates the `workflow.definition` document from this file.
  * After that, Studio is the source of truth: edit the workflow there. Labels can change freely,
  * but the Studio structure, the publish action, and the setup script filter on the stage slugs,
  * so keep those stable.
@@ -18,11 +18,10 @@ export const CAREER_QUIZ_STAGES = [
   {slug: 'ready_for_review', label: 'Ready to Review'},
   {slug: 'in_review', label: 'In Review'},
   {slug: 'approved', label: 'Approved'},
-  {slug: 'published', label: 'Published'},
 ] as const
 
+export const IN_REVIEW_QUIZ_STAGE = CAREER_QUIZ_STAGES[2]
 export const APPROVED_QUIZ_STAGE = CAREER_QUIZ_STAGES[3]
-export const PUBLISHED_QUIZ_STAGE = CAREER_QUIZ_STAGES[4]
 export const RETIRED_QUIZ_STAGE = {slug: 'retired', label: 'Retired'} as const
 
 const SUBMITTER = 'submitter'
@@ -133,14 +132,7 @@ export const careerQuizWorkflowDefinition = {
     stage(3, '#10B981', 'circle-check', {
       stageCriteria: blocks(
         'approved-criteria',
-        'Ready to go live. Publish moves the quiz to Published and adds it to the "Other career quizzes" list on /quiz within a few minutes.',
-      ),
-      enablePublishing: true,
-    }),
-    stage(4, '#059669', 'globe', {
-      stageCriteria: blocks(
-        'published-criteria',
-        'The quiz is live on /quiz. Small fixes can be published from here; send it back to In Review for anything that changes what the quiz is.',
+        'Approving publishes the quiz, and it appears in the "Other career quizzes" list on /quiz within a few minutes. Small fixes can be published from here; send it back to In Review for anything that changes what the quiz is.',
       ),
       enablePublishing: true,
     }),

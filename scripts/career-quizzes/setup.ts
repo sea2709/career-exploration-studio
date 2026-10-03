@@ -5,10 +5,10 @@
  * - Creates the `workflow.definition` document from
  *   schemaTypes/careerQuizzes/careerQuizWorkflow.ts if it doesn't exist yet. Pass --replace to
  *   overwrite edits made in Studio, which is also how to roll out a changed list of stages.
- * - Moves quizzes off stages the workflow no longer has, moves live quizzes still at Approved
- *   to Published, and moves assignments off roles the workflow no longer has.
+ * - Moves quizzes off stages the workflow no longer has, and moves assignments off roles the
+ *   workflow no longer has.
  * - Creates the starter quizzes in scripts/career-quizzes/quizzes.ts as published documents at
- *   Published, since the web app already listed them. Quizzes whose URL already exists are
+ *   Approved, since the web app already listed them. Quizzes whose URL already exists are
  *   skipped, so re-running never overwrites edits made in Studio.
  *
  * Usage:
@@ -23,7 +23,6 @@ import {
   CAREER_QUIZ_WORKFLOW_ID,
   careerQuizWorkflowDefinition,
   CONTENT_MANAGER_ROLE,
-  PUBLISHED_QUIZ_STAGE,
 } from '../../schemaTypes/careerQuizzes/careerQuizWorkflow'
 import {quizzes} from './quizzes'
 
@@ -31,6 +30,7 @@ import {quizzes} from './quizzes'
 const RENAMED_STAGES: Record<string, string> = {
   counselor_review: 'in_review',
   quiz_test: 'in_review',
+  published: APPROVED_QUIZ_STAGE.slug,
 }
 
 /** Role slugs from earlier versions of the workflow, and the role that replaced them. */
@@ -55,16 +55,8 @@ async function main() {
   const existingUrls = new Set(docs.flatMap((doc) => (doc.url ? [doc.url] : [])))
   const missing = quizzes.filter((quiz) => !existingUrls.has(quiz.url))
 
-  const publishedIds = new Set(
-    docs.filter((doc) => !doc._id.startsWith('drafts.')).map((d) => d._id),
-  )
-  const isLive = (id: string) => publishedIds.has(id.replace(/^drafts\./, ''))
   const moves = docs.flatMap((doc) => {
-    const to =
-      (doc.status && RENAMED_STAGES[doc.status]) ||
-      (doc.status === APPROVED_QUIZ_STAGE.slug && isLive(doc._id)
-        ? PUBLISHED_QUIZ_STAGE.slug
-        : null)
+    const to = doc.status && RENAMED_STAGES[doc.status]
     return to ? [{id: doc._id, from: doc.status, to}] : []
   })
   const roleMoves = docs.flatMap((doc) =>
@@ -101,7 +93,7 @@ async function main() {
     tx.create({
       _id: randomUUID(),
       _type: 'careerQuiz',
-      status: PUBLISHED_QUIZ_STAGE.slug,
+      status: APPROVED_QUIZ_STAGE.slug,
       listOrder: (quizzes.indexOf(quiz) + 1) * 10,
       ...quiz,
     })
